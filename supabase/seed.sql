@@ -1,0 +1,2 @@
+-- SnackScout seed data
+-- Placeholder: seed rows will be added after the schema migrations are defined.
