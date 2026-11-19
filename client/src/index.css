@@ -130,3 +130,8 @@ section > button {
     min-height: 75px;
   }
 }
+
+body {
+  background-color: hotpink !important;
+}
+
