@@ -1,8 +1,132 @@
+
+/* SnackScout - Global Styles */
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  min-width: 320px;
   font-family: system-ui, -apple-system, sans-serif;
+  background-color: #f4f7f5;
+  color: #24342d;
+}
+
+/* Main layout */
+
+main {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 36px 24px;
+}
+
+/* SnackScout header */
+
+header {
+  background: linear-gradient(135deg, #125b43, #23946c);
+  color: white;
+  padding: 48px;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  margin: 0 0 12px;
+  letter-spacing: -1.5px;
+}
+
+header p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 650px;
+  margin: 0;
+  color: #e3f5ed;
+}
+
+/* Page content */
+
+section {
+  background: white;
+  margin-top: 28px;
+  padding: 36px;
+  border-radius: 20px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+section h2 {
+  font-size: 1.8rem;
+  margin: 0 0 12px;
+}
+
+section p {
+  color: #607068;
+  line-height: 1.6;
+}
+
+/* Home navigation */
+
+nav {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-top: 28px;
+}
+
+button {
+  background: #e5f6ec;
+  color: #145c43;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+nav button {
+  min-height: 110px;
+  font-size: 1.1rem;
+}
+
+button:hover {
+  background: #c9edd9;
+  border-color: #23946c;
+  transform: translateY(-2px);
+}
+
+button:focus-visible {
+  outline: 3px solid #d59b26;
+  outline-offset: 3px;
+}
+
+section > button {
+  padding: 12px 20px;
+  margin-bottom: 20px;
+}
+
+/* Mobile-friendly layout */
+
+@media (max-width: 640px) {
+  main {
+    padding: 16px;
+  }
+
+  header {
+    padding: 32px 24px;
+  }
+
+  section {
+    padding: 24px 20px;
+  }
+
+  nav {
+    grid-template-columns: 1fr;
+  }
+
+  nav button {
+    min-height: 75px;
+  }
 }
