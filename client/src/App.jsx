@@ -177,17 +177,43 @@ function App() {
                 <ul>
                   {filteredProducts.map((product) => (
                     
-<li key={product.id}>
+
+<li
+  key={product.id}
+  style={{
+    listStyle: 'none',
+    marginBottom: '12px'
+  }}
+>
   <button
+    className="product-result-card"
     type="button"
     onClick={() => {
       setSelectedProduct(product)
       setCurrentPage('Product Details')
     }}
+    style={{
+      display: 'block',
+      width: '100%',
+      textAlign: 'left',
+      background: '#ffffff',
+      color: '#24342d',
+      border: '1px solid #d7e3db',
+      borderLeft: '6px solid #23946c',
+      borderRadius: '12px',
+      padding: '20px 24px',
+      fontSize: '1.05rem',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+      cursor: 'pointer'
+    }}
   >
-    {product.name} — {product.brand}
+    <strong>{product.name}</strong>
+    <span style={{ color: '#607068', fontWeight: 400 }}>
+      {' — '}{product.brand}
+    </span>
   </button>
 </li>
+
 
                   ))}
                 </ul>
