@@ -155,10 +155,19 @@ function App() {
               ) : (
                 <ul>
                   {filteredProducts.map((product) => (
-                    <li key={product.id}>
-                      <strong>{product.name}</strong>
-                      {' — '}{product.brand}
-                    </li>
+                    
+<li key={product.id}>
+  <button
+    type="button"
+    onClick={() => {
+      setSelectedProduct(product)
+      setCurrentPage('Product Details')
+    }}
+  >
+    {product.name} — {product.brand}
+  </button>
+</li>
+
                   ))}
                 </ul>
               )}
