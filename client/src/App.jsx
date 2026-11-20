@@ -87,12 +87,16 @@ function App() {
         </section>
       ) : (
         <section>
-          <button
-            type="button"
-            onClick={() => setCurrentPage('Home')}
-          >
-            Back to Home
-          </button>
+          
+{currentPage !== 'Search Results' && (
+  <button
+    type="button"
+    onClick={() => setCurrentPage('Home')}
+  >
+    Back to Home
+  </button>
+)}
+
 
           {currentPage === 'Find Products' ? (
             <>
