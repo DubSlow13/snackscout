@@ -43,6 +43,7 @@ const products = [
 
 function App() {
   const [currentPage, setCurrentPage] = useState('Home')
+  const [selectedProduct, setSelectedProduct] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedBrand, setSelectedBrand] = useState('')
 
