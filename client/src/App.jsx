@@ -220,11 +220,62 @@ function App() {
               )}
             </>
           ) : (
+            
+          ) : currentPage === 'Product Details' && selectedProduct ? (
+            <>
+              <h2>Product Details</h2>
+
+              <div style={{
+                background: '#f4f7f5',
+                padding: '28px',
+                borderRadius: '14px',
+                marginTop: '24px',
+                marginBottom: '24px',
+                borderLeft: '6px solid #23946c'
+              }}>
+                <h3 style={{ fontSize: '1.5rem', marginTop: 0 }}>
+                  {selectedProduct.name}
+                </h3>
+
+                <p><strong>Brand:</strong> {selectedProduct.brand}</p>
+                <p><strong>Flavor:</strong> {selectedProduct.flavor}</p>
+                <p><strong>Category:</strong> {selectedProduct.category}</p>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage('Search Results')}
+                >
+                  Back to Results
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage('Compare Stores')}
+                >
+                  Compare Stores
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage('Report Product')}
+                >
+                  Report Product
+                </button>
+              </div>
+            </>
+          ) : (
             <>
               <h2>{currentPage}</h2>
               <p>Page functionality coming next.</p>
             </>
           )}
+
         </section>
       )}
     </main>
