@@ -8,13 +8,38 @@ const mainSections = [
   'Verify Reports'
 ]
 
-// Temporary demo data until our API is connected
+
 const products = [
-  { id: 1, name: 'Doritos Nacho Cheese', brand: 'Doritos' },
-  { id: 2, name: 'Red Bull Energy Drink', brand: 'Red Bull' },
-  { id: 3, name: 'Takis Fuego', brand: 'Takis' },
-  { id: 4, name: 'Monster Energy', brand: 'Monster' }
+  {
+    id: 1,
+    name: 'Doritos Nacho Cheese',
+    brand: 'Doritos',
+    flavor: 'Nacho Cheese',
+    category: 'Chips'
+  },
+  {
+    id: 2,
+    name: 'Red Bull Energy Drink',
+    brand: 'Red Bull',
+    flavor: 'Original',
+    category: 'Energy Drinks'
+  },
+  {
+    id: 3,
+    name: 'Takis Fuego',
+    brand: 'Takis',
+    flavor: 'Fuego',
+    category: 'Chips'
+  },
+  {
+    id: 4,
+    name: 'Monster Energy',
+    brand: 'Monster',
+    flavor: 'Original',
+    category: 'Energy Drinks'
+  }
 ]
+
 
 function App() {
   const [currentPage, setCurrentPage] = useState('Home')
