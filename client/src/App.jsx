@@ -8,15 +8,38 @@ const mainSections = [
   'Verify Reports'
 ]
 
+// Temporary demo data until our API is connected
+const products = [
+  { id: 1, name: 'Doritos Nacho Cheese', brand: 'Doritos' },
+  { id: 2, name: 'Red Bull Energy Drink', brand: 'Red Bull' },
+  { id: 3, name: 'Takis Fuego', brand: 'Takis' },
+  { id: 4, name: 'Monster Energy', brand: 'Monster' }
+]
+
 function App() {
   const [currentPage, setCurrentPage] = useState('Home')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedBrand, setSelectedBrand] = useState('')
+
+  const filteredProducts = products.filter((product) => {
+    const matchesName = product.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+
+    const matchesBrand = selectedBrand === '' ||
+      product.brand === selectedBrand
+
+    return matchesName && matchesBrand
+  })
 
   return (
     <main>
       <header>
         <h1>SnackScout</h1>
-        <p>Find snacks and drinks, compare community prices,
-          and save your favorites.</p>
+        <p>
+          Find snacks and drinks, compare community prices,
+          and save your favorites.
+        </p>
       </header>
 
       {currentPage === 'Home' ? (
@@ -45,8 +68,81 @@ function App() {
             Back to Home
           </button>
 
-          <h2>{currentPage}</h2>
-          <p>Page functionality coming next.</p>
+          {currentPage === 'Find Products' ? (
+            <>
+              <h2>Find Products</h2>
+              <p>Search for your favorite snacks and drinks.</p>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  setCurrentPage('Search Results')
+                }}
+                style={{
+                  display: 'grid',
+                  gap: '16px',
+                  maxWidth: '450px'
+                }}
+              >
+                <label htmlFor="search">
+                  Product Name
+                </label>
+                <input
+                  id="search"
+                  type="search"
+                  placeholder="e.g. Doritos"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ padding: '12px', fontSize: '16px' }}
+                />
+
+                <label htmlFor="brand">Select Brand</label>
+                <select
+                  id="brand"
+                  value={selectedBrand}
+                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  style={{ padding: '12px', fontSize: '16px' }}
+                >
+                  <option value="">All Brands</option>
+                  <option value="Doritos">Doritos</option>
+                  <option value="Red Bull">Red Bull</option>
+                  <option value="Takis">Takis</option>
+                  <option value="Monster">Monster</option>
+                </select>
+
+                <button type="submit">Search Products</button>
+              </form>
+            </>
+          ) : currentPage === 'Search Results' ? (
+            <>
+              <h2>Search Results</h2>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage('Find Products')}
+              >
+                Back to Search
+              </button>
+
+              {filteredProducts.length === 0 ? (
+                <p>No matching products found.</p>
+              ) : (
+                <ul>
+                  {filteredProducts.map((product) => (
+                    <li key={product.id}>
+                      <strong>{product.name}</strong>
+                      {' — '}{product.brand}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : (
+            <>
+              <h2>{currentPage}</h2>
+              <p>Page functionality coming next.</p>
+            </>
+          )}
         </section>
       )}
     </main>
