@@ -145,14 +145,31 @@ function App() {
             </>
           ) : currentPage === 'Search Results' ? (
             <>
-              <h2>Search Results</h2>
+             
+<h2>Search Results</h2>
 
-              <button
-                type="button"
-                onClick={() => setCurrentPage('Find Products')}
-              >
-                Back to Search
-              </button>
+<div style={{
+  display: 'flex',
+  gap: '12px',
+  flexWrap: 'wrap',
+  marginTop: '20px',
+  marginBottom: '30px'
+}}>
+  <button
+    type="button"
+    onClick={() => setCurrentPage('Home')}
+  >
+    Back to Home
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setCurrentPage('Find Products')}
+  >
+    Back to Search
+  </button>
+</div>
+
 
               {filteredProducts.length === 0 ? (
                 <p>No matching products found.</p>
