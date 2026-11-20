@@ -218,12 +218,12 @@ function App() {
                   ))}
                 </ul>
               )}
-            </>
-          ) : (
             
+            </>
           ) : currentPage === 'Product Details' && selectedProduct ? (
             <>
               <h2>Product Details</h2>
+
 
               <div style={{
                 background: '#f4f7f5',
