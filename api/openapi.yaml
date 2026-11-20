@@ -1,0 +1,260 @@
+openapi: 3.0.3
+info:
+  title: SnackScout API
+  description: |
+    Express backend for SnackScout Prototype 2. Reads and writes the
+    Supabase PostgreSQL database using the service-role key, which never
+    leaves the server.
+  version: 0.2.0
+servers:
+  - url: http://localhost:3001
+    description: Local development
+tags:
+  - name: System
+  - name: Products
+  - name: Stores
+  - name: Users
+  - name: Reports
+paths:
+  /api/health:
+    get:
+      tags: [System]
+      summary: Service health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: API is running
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+              example: { status: ok, service: snackscout-api, database: configured }
+  /api/products:
+    get:
+      tags: [Products]
+      summary: List/search products
+      description: Returns all products; optionally filtered by name substring and/or exact brand.
+      operationId: listProducts
+      parameters:
+        - name: search
+          in: query
+          description: Case-insensitive substring match on product name
+          schema: { type: string }
+          example: redbull
+        - name: brand
+          in: query
+          description: Exact brand name filter
+          schema: { type: string }
+          example: Red Bull
+      responses:
+        '200':
+          description: Matching products (empty array when none match)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Product' }
+              example:
+                - product_id: 66666666-6666-4666-8666-666666666666
+                  name: Red Bull Energy Drink
+                  brand: Red Bull
+                  flavor: Original
+                  category: Energy Drinks
+                  barcode: null
+  /api/brands:
+    get:
+      tags: [Products]
+      summary: List distinct product brands
+      operationId: listBrands
+      responses:
+        '200':
+          description: Unique brand names sorted alphabetically
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+              example: [Doritos, Monster, Red Bull, Takis]
+  /api/products/{id}:
+    get:
+      tags: [Products]
+      summary: Get one product by id
+      operationId: getProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product UUID
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The product
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/stores:
+    get:
+      tags: [Stores]
+      summary: List all store branches
+      operationId: listStores
+      responses:
+        '200':
+          description: All store branches
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Store' }
+  /api/users:
+    get:
+      tags: [Users]
+      summary: List users with employee store approvals
+      description: Each user includes approved_stores, the store ids where an approved employee association exists.
+      operationId: listUsers
+      responses:
+        '200':
+          description: All users
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/User' }
+  /api/reports:
+    get:
+      tags: [Reports]
+      summary: List product reports (newest first)
+      description: Each report embeds a verification object, or null when no confirmed employee verification exists.
+      operationId: listReports
+      parameters:
+        - name: product_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: store_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Reports, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Report' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    post:
+      tags: [Reports]
+      summary: Submit a community price/availability report
+      operationId: createReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportInput' }
+            example:
+              product_id: 66666666-6666-4666-8666-666666666666
+              store_id: 99999999-9999-4999-8999-999999999999
+              user_id: 11111111-1111-4111-8111-111111111111
+              price: 3.19
+              availability_status: in_stock
+              description: Two cans left on the top shelf
+      responses:
+        '201':
+          description: Report created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Report' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  responses:
+    BadRequest:
+      description: Invalid request parameters or body
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: 'availability_status must be one of: in_stock, out_of_stock' }
+    NotFound:
+      description: Referenced resource does not exist
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Product not found }
+  schemas:
+    Health:
+      type: object
+      properties:
+        status: { type: string }
+        service: { type: string }
+        database: { type: string }
+    Product:
+      type: object
+      properties:
+        product_id: { type: string, format: uuid }
+        name: { type: string }
+        brand: { type: string }
+        flavor: { type: string }
+        category: { type: string }
+        barcode: { type: string, nullable: true }
+    Store:
+      type: object
+      properties:
+        store_id: { type: string, format: uuid }
+        store_name: { type: string }
+        branch_name: { type: string }
+        address: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        operating_hours: { type: string }
+    User:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string }
+        phone_number: { type: string, nullable: true }
+        role: { type: string, enum: [shopper, employee] }
+        created_at: { type: string, format: date-time }
+        approved_stores:
+          type: array
+          items: { type: string, format: uuid }
+          description: Store ids where this employee is approved
+    Verification:
+      type: object
+      properties:
+        verification_id: { type: string, format: uuid }
+        verification_status: { type: string }
+        verified_by: { type: string, format: uuid, nullable: true }
+        verified_at: { type: string, format: date-time }
+        notes: { type: string, nullable: true }
+    Report:
+      type: object
+      properties:
+        report_id: { type: string, format: uuid }
+        product_id: { type: string, format: uuid }
+        store_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        price: { type: number }
+        availability_status: { type: string, enum: [in_stock, out_of_stock] }
+        description: { type: string, nullable: true }
+        photo_url: { type: string, nullable: true }
+        submitted_at: { type: string, format: date-time }
+        verification:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Verification'
+    ReportInput:
+      type: object
+      required: [product_id, store_id, user_id, price, availability_status]
+      properties:
+        product_id: { type: string, format: uuid }
+        store_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        price: { type: number, minimum: 0 }
+        availability_status: { type: string, enum: [in_stock, out_of_stock] }
+        description: { type: string }
+        photo_url: { type: string }
+    Error:
+      type: object
+      properties:
+        error: { type: string }

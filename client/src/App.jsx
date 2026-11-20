@@ -1,49 +1,8 @@
 import { useEffect, useState } from 'react'
+import { api } from './api.js'
 
-// SnackScout Prototype 2: frontend-only interactive demonstration.
-// Demo data and changes stay in this browser; a real API replaces them in Step 3.
-const PRODUCTS = [
-  { id: 'doritos', name: 'Doritos Nacho Cheese', brand: 'Doritos', flavor: 'Nacho Cheese', category: 'Chips' },
-  { id: 'redbull', name: 'Red Bull Energy Drink', brand: 'Red Bull', flavor: 'Original', category: 'Energy Drinks' },
-  { id: 'takis', name: 'Takis Fuego', brand: 'Takis', flavor: 'Fuego', category: 'Chips' },
-  { id: 'monster', name: 'Monster Energy', brand: 'Monster', flavor: 'Original', category: 'Energy Drinks' }
-]
-
-const STORES = [
-  { id: 'downtown', name: 'Campus Corner Market', branch: 'Downtown', address: '300 Example Lane, Chico, CA 95928', hours: '8 AM – 10 PM', lat: 39.731, lon: -121.841 },
-  { id: 'south', name: 'QuickMart', branch: 'South Chico', address: '400 Example Lane, Chico, CA 95928', hours: '24 Hours', lat: 39.7, lon: -121.82 },
-  { id: 'campus', name: 'SnackStop', branch: 'Campus', address: '100 Example Lane, Chico, CA 95928', hours: '7 AM – 11 PM', lat: 39.7285, lon: -121.8375 },
-  { id: 'north', name: 'SnackStop', branch: 'North Chico', address: '200 Example Lane, Chico, CA 95973', hours: '6 AM – 12 AM', lat: 39.765, lon: -121.85 }
-]
-
-const USERS = [
-  { id: 'alex', name: 'Alex Rivera', role: 'shopper', approvedStores: [] },
-  { id: 'jordan', name: 'Jordan Lee', role: 'shopper', approvedStores: [] },
-  { id: 'casey', name: 'Casey Morgan', role: 'employee', approvedStores: ['campus'] },
-  { id: 'taylor', name: 'Taylor Brooks', role: 'employee', approvedStores: ['downtown', 'south'] }
-]
-
-const START_REPORTS = [
-  { id: 'r1', productId: 'doritos', storeId: 'downtown', userId: 'alex', price: 4.29, availability: 'in_stock', submittedAt: '2026-11-18T03:42:58Z', status: 'verified', verifiedBy: 'taylor', description: '' },
-  { id: 'r2', productId: 'redbull', storeId: 'campus', userId: 'alex', price: 2.99, availability: 'in_stock', submittedAt: '2026-11-16T03:42:58Z', status: 'verified', verifiedBy: 'casey', description: '' },
-  { id: 'r3', productId: 'redbull', storeId: 'north', userId: 'jordan', price: 3.49, availability: 'out_of_stock', submittedAt: '2026-11-17T03:42:58Z', status: 'pending', verifiedBy: null, description: '' },
-  { id: 'r4', productId: 'redbull', storeId: 'campus', userId: 'jordan', price: 2.79, availability: 'in_stock', submittedAt: '2026-11-19T03:42:58Z', status: 'verified', verifiedBy: 'casey', description: '' },
-  { id: 'r5', productId: 'takis', storeId: 'south', userId: 'jordan', price: 3.79, availability: 'in_stock', submittedAt: '2026-11-18T03:42:58Z', status: 'verified', verifiedBy: 'taylor', description: '' }
-]
-
-const START_FAVORITES = [
-  { id: 'f1', userId: 'alex', productId: 'doritos', storeId: 'downtown' },
-  { id: 'f2', userId: 'alex', productId: 'redbull', storeId: null },
-  { id: 'f3', userId: 'jordan', productId: 'monster', storeId: null },
-  { id: 'f4', userId: 'jordan', productId: 'takis', storeId: 'south' }
-]
-
-const START_ALERTS = {
-  f1: { restock: false, priceChange: true },
-  f2: { restock: true, priceChange: false },
-  f3: { restock: false, priceChange: false },
-  f4: { restock: true, priceChange: false }
-}
+// SnackScout Prototype 2: React frontend wired to the Express API (Supabase).
+// Favorites and alert toggles stay in this browser only (see useDemoData below).
 
 const COLORS = { green: '#17684e', light: '#e5f6ec', ink: '#24342d', gray: '#607068', line: '#d7e3db' }
 const FORM_STYLE = { display: 'grid', gap: '12px', maxWidth: '580px', marginTop: '16px' }
@@ -51,8 +10,8 @@ const FIELD_STYLE = { width: '100%', padding: '12px', fontSize: '16px', border: 
 const CARD_STYLE = { background: '#f4f7f5', padding: '22px', borderLeft: '5px solid #23946c', borderRadius: '14px', marginBottom: '14px' }
 const ROW_STYLE = { display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', margin: '16px 0 24px' }
 
-function getProduct(id) { return PRODUCTS.find((p) => p.id === id) }
-function getStore(id) { return STORES.find((s) => s.id === id) }
+function getProduct(list, id) { return list.find((p) => p.id === id) }
+function getStore(list, id) { return list.find((s) => s.id === id) }
 function storeLabel(store) { return `${store.name} — ${store.branch}` }
 function money(price) { return `$${Number(price).toFixed(2)}` }
 function displayDate(date) { return new Date(date).toLocaleString() }
@@ -103,31 +62,61 @@ function Field({ label, children }) {
 
 function App() {
   const [page, setPage] = useState('Home')
-  const [accountId, setAccountId] = useState('alex')
-  const [productId, setProductId] = useState('doritos')
+  const [accountId, setAccountId] = useState('')
+  const [productId, setProductId] = useState('')
   const [query, setQuery] = useState('')
   const [brand, setBrand] = useState('')
   const [sortBy, setSortBy] = useState('price_low')
-  const [originId, setOriginId] = useState('campus')
+  const [originId, setOriginId] = useState('')
   const [favoriteStoreId, setFavoriteStoreId] = useState('')
   const [activeFavoriteId, setActiveFavoriteId] = useState(null)
   const [notice, setNotice] = useState('')
-  const [reports, setReports] = useDemoData('snackscout-p2-demo-reports', START_REPORTS)
-  const [favorites, setFavorites] = useDemoData('snackscout-p2-demo-favorites', START_FAVORITES)
-  const [alerts, setAlerts] = useDemoData('snackscout-p2-demo-alerts', START_ALERTS)
-  const [reportProductId, setReportProductId] = useState('doritos')
-  const [reportStoreId, setReportStoreId] = useState('downtown')
+  const [products, setProducts] = useState([])
+  const [stores, setStores] = useState([])
+  const [users, setUsers] = useState([])
+  const [reports, setReports] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [favorites, setFavorites] = useDemoData('snackscout-favorites-v2', [])
+  const [alerts, setAlerts] = useDemoData('snackscout-alerts-v2', {})
+  const [reportProductId, setReportProductId] = useState('')
+  const [reportStoreId, setReportStoreId] = useState('')
   const [reportPrice, setReportPrice] = useState('')
   const [reportAvailability, setReportAvailability] = useState('in_stock')
   const [reportDescription, setReportDescription] = useState('')
   const [reportPhoto, setReportPhoto] = useState('')
   const [submittedReport, setSubmittedReport] = useState(null)
 
-  const account = USERS.find((u) => u.id === accountId)
-  const selectedProduct = getProduct(productId)
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setLoadError('')
+    Promise.all([api.getProducts(), api.getStores(), api.getUsers(), api.getReports()])
+      .then(([productRows, storeRows, userRows, reportRows]) => {
+        if (cancelled) return
+        setProducts(productRows)
+        setStores(storeRows)
+        setUsers(userRows)
+        setReports(reportRows)
+        setAccountId((cur) => (userRows.some((u) => u.id === cur) ? cur : userRows[0]?.id ?? ''))
+        setProductId((cur) => (productRows.some((p) => p.id === cur) ? cur : productRows[0]?.id ?? ''))
+        setOriginId((cur) => (storeRows.some((s) => s.id === cur) ? cur : storeRows[0]?.id ?? ''))
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setLoadError(err.message)
+        setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  const account = users.find((u) => u.id === accountId)
+  const selectedProduct = getProduct(products, productId)
   const userFavorites = favorites.filter((f) => f.userId === accountId)
   const favoriteBeingEdited = favorites.find((f) => f.id === activeFavoriteId && f.userId === accountId)
-  const filteredProducts = PRODUCTS.filter((p) =>
+  const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(query.trim().toLowerCase()) && (!brand || p.brand === brand)
   )
 
@@ -138,9 +127,9 @@ function App() {
       if (!previous || new Date(r.submittedAt) > new Date(previous.submittedAt)) byStore.set(r.storeId, r)
     })
     const list = [...byStore.values()]
-    const origin = getStore(originId)
+    const origin = getStore(stores, originId)
     list.sort((a, b) => {
-      if (sortBy === 'distance') return milesBetween(origin, getStore(a.storeId)) - milesBetween(origin, getStore(b.storeId))
+      if (sortBy === 'distance') return milesBetween(origin, getStore(stores, a.storeId)) - milesBetween(origin, getStore(stores, b.storeId))
       if (sortBy === 'price_high') return b.price - a.price
       return a.price - b.price
     })
@@ -151,7 +140,7 @@ function App() {
   function openProduct(id) { setProductId(id); setFavoriteStoreId(''); go('Product Details') }
   function openReport(id = productId, storeId = '') {
     setReportProductId(id)
-    setReportStoreId(storeId || STORES[0].id)
+    setReportStoreId(storeId || stores[0]?.id || '')
     setReportPrice('')
     setReportDescription('')
     setReportPhoto('')
@@ -174,22 +163,31 @@ function App() {
       [favoriteId]: { restock: false, priceChange: false, ...prev[favoriteId], [field]: !(prev[favoriteId]?.[field] ?? false) }
     }))
   }
-  function submitReport(event) {
+  async function submitReport(event) {
     event.preventDefault()
     const numericPrice = Number(reportPrice)
-    if (!getProduct(reportProductId) || !getStore(reportStoreId) || reportPrice.trim() === '' || !Number.isFinite(numericPrice) || numericPrice < 0) {
+    if (!getProduct(products, reportProductId) || !getStore(stores, reportStoreId) || reportPrice.trim() === '' || !Number.isFinite(numericPrice) || numericPrice < 0) {
       setNotice('Select a product and store, and enter a valid nonnegative price.')
       return
     }
-    const newReport = {
-      id: `r-${Date.now()}`, productId: reportProductId, storeId: reportStoreId,
-      userId: accountId, price: numericPrice, availability: reportAvailability,
-      submittedAt: new Date().toISOString(), description: reportDescription.trim(),
-      photoName: reportPhoto, status: 'pending', verifiedBy: null
+    setSubmitting(true)
+    try {
+      const created = await api.postReport({
+        product_id: reportProductId,
+        store_id: reportStoreId,
+        user_id: accountId,
+        price: numericPrice,
+        availability_status: reportAvailability,
+        description: reportDescription.trim() || undefined,
+      })
+      setReports((prev) => [...prev, created]) // Keep historical reports unchanged.
+      setSubmittedReport({ ...created, photoName: reportPhoto })
+      go('Report Confirmation')
+    } catch (err) {
+      setNotice(`Report could not be saved: ${err.message}`)
+    } finally {
+      setSubmitting(false)
     }
-    setReports((prev) => [...prev, newReport]) // Keep historical reports unchanged.
-    setSubmittedReport(newReport)
-    go('Report Confirmation')
   }
   function verifyReport(id) {
     const report = reports.find((r) => r.id === id)
@@ -243,7 +241,7 @@ function App() {
           <Field label="Product Name"><input style={FIELD_STYLE} type="search" placeholder="e.g. Doritos" value={query} onChange={(e) => setQuery(e.target.value)} /></Field>
           <Field label="Brand"><select style={FIELD_STYLE} value={brand} onChange={(e) => setBrand(e.target.value)}>
             <option value="">All brands</option>
-            {[...new Set(PRODUCTS.map((p) => p.brand))].map((b) => <option key={b}>{b}</option>)}
+            {[...new Set(products.map((p) => p.brand))].map((b) => <option key={b}>{b}</option>)}
           </select></Field>
           <Action type="submit" variant="primary">Search Products</Action>
         </form>
@@ -275,7 +273,7 @@ function App() {
         <div style={FORM_STYLE}>
           <Field label="Save for any store or one specific location"><select style={FIELD_STYLE} value={favoriteStoreId} onChange={(e) => setFavoriteStoreId(e.target.value)}>
             <option value="">Any store</option>
-            {STORES.map((s) => <option key={s.id} value={s.id}>{storeLabel(s)}</option>)}
+            {stores.map((s) => <option key={s.id} value={s.id}>{storeLabel(s)}</option>)}
           </select></Field>
           <Action onClick={() => saveFavorite(selectedProduct.id, favoriteStoreId || null)}>Save Favorite</Action>
         </div>
@@ -291,19 +289,19 @@ function App() {
             <option value="distance">Distance: nearest first (demo)</option>
           </select></Field>
           {sortBy === 'distance' && <Field label="Demo reference location"><select style={FIELD_STYLE} value={originId} onChange={(e) => setOriginId(e.target.value)}>
-            {STORES.map((s) => <option key={s.id} value={s.id}>{storeLabel(s)}</option>)}
+            {stores.map((s) => <option key={s.id} value={s.id}>{storeLabel(s)}</option>)}
           </select></Field>}
         </div>
         {latestForProduct.length === 0 ? <p>No store reports yet. Submit the first one!</p> :
           <div style={{ marginTop: '24px' }}>
             {latestForProduct.map((r) => {
-              const store = getStore(r.storeId)
+              const store = getStore(stores, r.storeId)
               return <div key={store.id} style={CARD_STYLE}>
                 <h3 style={{ marginTop: 0 }}>{storeLabel(store)} — {money(r.price)}</h3>
                 <p><strong>Reported availability:</strong> {availabilityLabel(r.availability)} · {r.status === 'verified' ? 'Employee verified' : 'Awaiting verification'}</p>
                 <p><strong>Last reported:</strong> {displayDate(r.submittedAt)}</p>
                 <p><strong>Address:</strong> {store.address} · <strong>Hours:</strong> {store.hours}</p>
-                {sortBy === 'distance' && <p><strong>Approx. straight-line distance:</strong> {milesBetween(getStore(originId), store).toFixed(1)} miles (demo)</p>}
+                {sortBy === 'distance' && <p><strong>Approx. straight-line distance:</strong> {milesBetween(getStore(stores, originId), store).toFixed(1)} miles (demo)</p>}
                 <div style={ROW_STYLE}>
                   <Action onClick={() => saveFavorite(productId, store.id)}>Save at this Store</Action>
                   <Action onClick={() => openReport(productId, store.id)}>Submit Updated Report</Action>
@@ -318,8 +316,8 @@ function App() {
         <p>Your saved products and optional store-specific favorites.</p>
         {userFavorites.length === 0 ? <p>No saved products yet. Find a product and choose Save Favorite.</p> :
           userFavorites.map((fav) => <div key={fav.id} style={CARD_STYLE}>
-            <h3 style={{ marginTop: 0 }}>{getProduct(fav.productId)?.name}</h3>
-            <p>{fav.storeId ? storeLabel(getStore(fav.storeId)) : 'Any store'}</p>
+            <h3 style={{ marginTop: 0 }}>{getProduct(products, fav.productId)?.name}</h3>
+            <p>{fav.storeId ? storeLabel(getStore(stores, fav.storeId)) : 'Any store'}</p>
             <p>Restock alert: {alerts[fav.id]?.restock ? 'Enabled' : 'Off'} · Price-change alert: {alerts[fav.id]?.priceChange ? 'Enabled' : 'Off'}</p>
             <div style={ROW_STYLE}>
               <Action onClick={() => openProduct(fav.productId)}>Product Details</Action>
@@ -330,7 +328,7 @@ function App() {
       </>
 
       case 'Restock Alert Settings': return favoriteBeingEdited ? <>
-        <p>Choose alerts for <strong>{getProduct(favoriteBeingEdited.productId)?.name}</strong> — {favoriteBeingEdited.storeId ? storeLabel(getStore(favoriteBeingEdited.storeId)) : 'Any store'}.</p>
+        <p>Choose alerts for <strong>{getProduct(products, favoriteBeingEdited.productId)?.name}</strong> — {favoriteBeingEdited.storeId ? storeLabel(getStore(stores, favoriteBeingEdited.storeId)) : 'Any store'}.</p>
         <div style={CARD_STYLE}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 650 }}>
             <input type="checkbox" checked={!!alerts[favoriteBeingEdited.id]?.restock} onChange={() => toggleAlert(favoriteBeingEdited.id, 'restock')} /> Enable restock alerts
@@ -347,10 +345,10 @@ function App() {
         <p>Submit a price, stock update, or correction. New reports are added without deleting earlier reports.</p>
         <form style={FORM_STYLE} onSubmit={submitReport}>
           <Field label="Product"><select style={FIELD_STYLE} value={reportProductId} onChange={(e) => setReportProductId(e.target.value)} required>
-            {PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select></Field>
           <Field label="Store / branch"><select style={FIELD_STYLE} value={reportStoreId} onChange={(e) => setReportStoreId(e.target.value)} required>
-            {STORES.map((s) => <option key={s.id} value={s.id}>{storeLabel(s)}</option>)}
+            {stores.map((s) => <option key={s.id} value={s.id}>{storeLabel(s)}</option>)}
           </select></Field>
           <Field label="Reported price ($)"><input style={FIELD_STYLE} type="number" min="0" step="0.01" required placeholder="e.g. 2.99" value={reportPrice} onChange={(e) => setReportPrice(e.target.value)} /></Field>
           <Field label="Reported availability"><select style={FIELD_STYLE} value={reportAvailability} onChange={(e) => setReportAvailability(e.target.value)}>
@@ -359,15 +357,15 @@ function App() {
           <Field label="Description (optional)"><textarea style={FIELD_STYLE} rows={3} value={reportDescription} onChange={(e) => setReportDescription(e.target.value)} placeholder="Where you saw the product or price tag" /></Field>
           <Field label="Product or price-tag photo (optional demo selection)"><input style={FIELD_STYLE} type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setReportPhoto(e.target.files?.[0]?.name || '')} /></Field>
           {reportPhoto && <p>Selected: {reportPhoto}. Photo upload to the server is not implemented yet.</p>}
-          <Action type="submit" variant="primary">Submit Community Report</Action>
+          <Action type="submit" variant="primary" disabled={submitting}>{submitting ? 'Submitting…' : 'Submit Community Report'}</Action>
         </form>
       </>
 
       case 'Report Confirmation': return submittedReport ? <>
         <div style={CARD_STYLE}>
           <h3>Report received — demo</h3>
-          <p><strong>Product:</strong> {getProduct(submittedReport.productId)?.name}</p>
-          <p><strong>Store:</strong> {storeLabel(getStore(submittedReport.storeId))}</p>
+          <p><strong>Product:</strong> {getProduct(products, submittedReport.productId)?.name}</p>
+          <p><strong>Store:</strong> {storeLabel(getStore(stores, submittedReport.storeId))}</p>
           <p><strong>Price:</strong> {money(submittedReport.price)}</p>
           <p><strong>Availability:</strong> {availabilityLabel(submittedReport.availability)}</p>
           <p>Submitted: {displayDate(submittedReport.submittedAt)} · Awaiting employee verification</p>
@@ -383,7 +381,7 @@ function App() {
         <p>Store employees can review reports for their approved store locations.</p>
         {account.role === 'employee' ? <>
           <p><strong>Demo employee:</strong> {account.name}</p>
-          <p><strong>Approved locations:</strong> {account.approvedStores.map((id) => storeLabel(getStore(id))).join(', ') || 'None'}</p>
+          <p><strong>Approved locations:</strong> {account.approvedStores.map((id) => storeLabel(getStore(stores, id))).join(', ') || 'None'}</p>
           <Action variant="primary" onClick={() => go('Review & Verify Reports')}>Review & Verify Reports</Action>
         </> : <div style={CARD_STYLE}>
           <p><strong>Employee-only demo screen.</strong> Select Casey Morgan or Taylor Brooks from the demo account menu to test it.</p>
@@ -395,9 +393,9 @@ function App() {
         <p>These reports belong to your approved store locations. Confirm reported availability only when accurate.</p>
         {reports.filter((r) => account.approvedStores.includes(r.storeId)).length === 0 ? <p>No reports for your approved locations.</p> :
           reports.filter((r) => account.approvedStores.includes(r.storeId)).slice().reverse().map((r) => <div key={r.id} style={CARD_STYLE}>
-            <h3 style={{ marginTop: 0 }}>{getProduct(r.productId)?.name} — {storeLabel(getStore(r.storeId))}</h3>
+            <h3 style={{ marginTop: 0 }}>{getProduct(products, r.productId)?.name} — {storeLabel(getStore(stores, r.storeId))}</h3>
             <p>{money(r.price)} · {availabilityLabel(r.availability)} · {displayDate(r.submittedAt)}</p>
-            <p><strong>Reporter:</strong> {USERS.find((u) => u.id === r.userId)?.name} · <strong>Status:</strong> {r.status === 'verified' ? 'Verified' : 'Pending'}</p>
+            <p><strong>Reporter:</strong> {users.find((u) => u.id === r.userId)?.name} · <strong>Status:</strong> {r.status === 'verified' ? 'Verified' : 'Pending'}</p>
             {r.description && <p><strong>Notes:</strong> {r.description}</p>}
             {r.status !== 'verified' && <Action variant="primary" onClick={() => verifyReport(r.id)}>Verify Availability</Action>}
           </div>)}
@@ -411,22 +409,27 @@ function App() {
     <header>
       <h1>SnackScout</h1>
       <p>Find snacks and drinks, compare community prices, and save your favorites.</p>
-      <div style={{ marginTop: '18px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+      {users.length > 0 && <div style={{ marginTop: '18px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
         <label htmlFor="demo-account" style={{ fontWeight: 650 }}>Demo account:</label>
         <select id="demo-account" value={accountId} onChange={(e) => { setAccountId(e.target.value); setNotice(''); go('Home') }}
           style={{ ...FIELD_STYLE, width: 'auto', maxWidth: '100%' }}>
-          {USERS.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
+          {users.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
         </select>
-      </div>
+      </div>}
     </header>
     <section>
       <p style={{ fontSize: '0.82rem', color: COLORS.gray, margin: '0 0 18px' }}>
-        PROTOTYPE 2 DEMO — Sample products, stores and reports. Changes stay in this browser; no live Supabase/API connection yet.
+        LIVE DATA — products, stores and reports load from the SnackScout API (Supabase). Demo account switching is not real authentication; favorites and alert toggles stay in this browser.
       </p>
       <h2>{page}</h2>
       {nav()}
       {notice && <p role="status" style={{ padding: '12px', background: COLORS.light, borderRadius: '9px', color: COLORS.green }}>{notice}</p>}
-      {content()}
+      {loading ? <p>Loading SnackScout data…</p>
+        : loadError ? <div style={CARD_STYLE}>
+          <p><strong>Could not reach the SnackScout API.</strong> {loadError}</p>
+          <p>Start the API (<code>cd api &amp;&amp; npm run dev</code>) and reload this page.</p>
+        </div>
+        : content()}
     </section>
   </main>
 }
